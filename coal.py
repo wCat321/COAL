@@ -104,12 +104,25 @@ def assemble_line_with_labels(parts, labels, debug=False):
         binary = encode_r_type(rs, rt, rd, opcode, debug)
 
     elif info["type"] == "I":
-        rs, rt, imm = parts[2], parts[1], parts[3]
-        if debug:
-            print(f"\tI-type instruction with:\n\t\trs = {rs} | 0b{REGISTER_MAP[rs]}"
-                f"\n\t\trt = {rt} | 0b{REGISTER_MAP[rt]}"
-                f"\n\t\tIMM = {imm} | 0b{format(int(imm) & 0xF, '04b')}")        
-        binary = encode_i_type(rs, rt, imm, opcode, debug)
+        if instr in ("LW", "SW"):
+            rt = parts[1] 
+            match = re.match(r"(-?\d+)\((R\d)\)", parts[2], re.IGNORECASE)
+            if not match:
+                raise ValueError(f"Invalid syntax for {instr}: '{' '.join(parts)}'. Expected offset(base).")
+            imm, rs = match.groups()
+            rs = rs.upper()
+            if debug:
+                print(f"\tI-{instr}-type instruction with:\n\t\trs = {rs} | 0b{REGISTER_MAP[rs]}"
+                      f"\n\t\trt = {rt.upper()} | 0b{REGISTER_MAP[rt.upper()]}"
+                      f"\n\t\tOFFSET = {imm} | 0b{format(int(imm) & 0xF, '04b')}")
+            binary = encode_i_type(rs.upper(), rt.upper(), imm, opcode, debug)
+        else:
+            rs, rt, imm = parts[2], parts[1], parts[3]
+            if debug:
+                print(f"\tI-type instruction with:\n\t\trs = {rs} | 0b{REGISTER_MAP[rs]}"
+                    f"\n\t\trt = {rt} | 0b{REGISTER_MAP[rt]}"
+                    f"\n\t\tIMM = {imm} | 0b{format(int(imm) & 0xF, '04b')}")        
+            binary = encode_i_type(rs, rt, imm, opcode, debug)
 
     elif info["type"] == "J":
         rs, rt, target = parts[1], parts[2], parts[3]
